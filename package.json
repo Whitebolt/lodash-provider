@@ -1,6 +1,6 @@
 {
   "name": "lodash-provider",
-  "description": "A lodash function provider that exports function modules dynamically.",
+  "description": "A lodash synatic suguar module to eaily mix and match your own utility functions with lodash ones.",
   "author": "Whitebolt <hello@whitebolt.net>",
   "contributors": [
     {
@@ -8,7 +8,7 @@
       "email": "stephen@whitebolt.net"
     }
   ],
-  "version": "1.0.0",
+  "version": "1.0.1",
   "private": false,
   "keywords": [
     "lodash",
@@ -18,12 +18,12 @@
   },
   "repository": {
     "type": "git",
-    "url": "git@github.com:Whitebolt/vinyl-commonjs-dependencies.git"
+    "url": "git@github.com:Whitebolt/lodash-provider.git"
   },
   "bugs": {
-    "url": "https://github.com/Whitebolt/vinyl-commonjs-dependencies/issues"
+    "url": "https://github.com/Whitebolt/lodash-provider/issues"
   },
-  "homepage": "https://github.com/Whitebolt/vinyl-commonjs-dependencies#readme",
+  "homepage": "https://github.com/Whitebolt/lodash-provider#readme",
   "engines": ">=6.5.0",
   "license": "MIT",
   "devDependencies": {},
