@@ -8,13 +8,13 @@
       "email": "stephen@whitebolt.net"
     }
   ],
-  "version": "0.0.1",
+  "version": "0.8.0",
   "private": false,
   "keywords": [
-
+    "lodash",
+    "utility"
   ],
   "dependencies": {
-
   },
   "repository": {
     "type": "git",
@@ -24,7 +24,7 @@
     "url": "https://github.com/Whitebolt/vinyl-commonjs-dependencies/issues"
   },
   "homepage": "https://github.com/Whitebolt/vinyl-commonjs-dependencies#readme",
-  "engines": ">=8.0.0",
+  "engines": ">=6.5.0",
   "license": "MIT",
   "devDependencies": {},
   "peerDependencies": {
