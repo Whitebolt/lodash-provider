@@ -47,29 +47,13 @@ function lodashFunctionToString(functionName, require) {
 	}
 }
 
-/**
- * Export a proxy, which adds lodash functions dynamically.
- *
- * @param {Object} lookup		Default exports (non-lodash).
- * @param _require				Parent require function (stops symlink issues).
- * @returns {Proxy}				Proxy to lodash and other functions.
- */
-module.exports = function(lookup, _require) {
-	lookup = lookup || {lodashRequire:lodashRequire};
-	_require = _require || require;
-
-	var _module = module;
-	while(_module.parent) _module = _module.parent;
-
-	return new Proxy(lookup, {
-		get: function(target, property, receiver) {
-			if (target.hasOwnProperty(property)) return Reflect.get(target, property, receiver);
-			return lodashRequire(property, _require);
-		},
-		set: function(target, property, value, receiver) {
-			lookup[property] = value;
-			return true;
-		}
-	});
-};
-
+var lookup = {};
+module.exports = new Proxy(lookup, {
+	get: function(target, property, receiver) {
+		if (target.hasOwnProperty(property)) return Reflect.get(target, property, receiver);
+		return lodashRequire(property, lookup.__require);
+	},
+	set: function(target, property, value, receiver) {
+		return Reflect.set(target, property, value, receiver);
+	}
+});
