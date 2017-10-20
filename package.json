@@ -1,0 +1,32 @@
+{
+  "name": "lodash-provider",
+  "description": "A lodash function provider that exports function modules dynamically.",
+  "author": "Whitebolt <hello@whitebolt.net>",
+  "contributors": [
+    {
+      "name": "Stephen Simpson",
+      "email": "stephen@whitebolt.net"
+    }
+  ],
+  "version": "0.0.1",
+  "private": false,
+  "keywords": [
+
+  ],
+  "dependencies": {
+
+  },
+  "repository": {
+    "type": "git",
+    "url": "git@github.com:Whitebolt/vinyl-commonjs-dependencies.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Whitebolt/vinyl-commonjs-dependencies/issues"
+  },
+  "homepage": "https://github.com/Whitebolt/vinyl-commonjs-dependencies#readme",
+  "engines": ">=8.0.0",
+  "license": "MIT",
+  "devDependencies": {},
+  "peerDependencies": {
+  }
+}
