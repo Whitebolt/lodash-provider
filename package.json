@@ -8,7 +8,7 @@
       "email": "stephen@whitebolt.net"
     }
   ],
-  "version": "1.0.1",
+  "version": "1.1.0",
   "private": false,
   "keywords": [
     "lodash",
@@ -24,7 +24,7 @@
     "url": "https://github.com/Whitebolt/lodash-provider/issues"
   },
   "homepage": "https://github.com/Whitebolt/lodash-provider#readme",
-  "engines": ">=6.5.0",
+  "engines": ">=4.00",
   "license": "MIT",
   "devDependencies": {},
   "peerDependencies": {
