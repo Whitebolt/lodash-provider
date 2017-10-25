@@ -1,13 +1,22 @@
 'use strict';
 
+var lodashTest = /^lodash\.[a-z0-9]/;
+var lookup = {};
+var deleted = {};
+
 var readFileSync = require('fs').readFileSync;
 var path = require('path');
 var memoize = require('lodash.memoize');
 var uniq = require('lodash.uniq');
+var localRequire = (function(){
+	var resolve = require('resolve').sync;
+	var dir = path.dirname((module.parent || module).filename);
+	var resolver = memoize(function(moduleId) {return resolve(moduleId, {basedir:dir});});
+	var _require = memoize(function (moduleId) {return require(resolver(moduleId))});
+	_require.resolve = resolver;
+	return _require;
+})();
 
-var lodashTest = /^lodash\.[a-z0-9]/;
-var lookup = {};
-var deleted = {};
 
 /**
  * Get a lodash module id for the given function.
@@ -24,15 +33,14 @@ function getLodashId(functionName) {
  *
  * @throws {ReferenceError}			If function not found then throw error.
  * @param {string} functionName		The function name to find (this will be lower-cased).
- * @param {Function} require			The require function to use - avoids symlinking errors.
  * @returns {Function}				The lodash function.
  */
-function lodashRequire(functionName, require) {
+function lodashRequire(functionName) {
 	var moduleId = getLodashId(functionName);
 
 	try {
-		var method = require(moduleId);
-		method.toString = lodashFunctionToString(functionName, require);
+		var method = localRequire(moduleId);
+		method.toString = lodashFunctionToString(functionName);
 		return method;
 	} catch (err) {
 		throw new ReferenceError('Could not find '+functionName+', did you forget to install '+moduleId);
@@ -43,11 +51,10 @@ function lodashRequire(functionName, require) {
  * Get the .toString() of a lodash function. Will wrap the entire module.
  *
  * @param {string} functionName		Function name to export.
- * @param {Function} require			The require function to use - avoids symlinking errors.
  * @returns {Function}				The function module wrapped correctly.
  */
-function lodashFunctionToString(functionName, require) {
-	var moduleText = readFileSync(require.resolve(getLodashId(functionName)), 'utf-8');
+function lodashFunctionToString(functionName) {
+	var moduleText = readFileSync(localRequire.resolve(getLodashId(functionName)), 'utf-8');
 
 	return function () {
 		return 'function '+functionName+'() {const module = {exports:{}};'+moduleText+'\nreturn module.exports.apply({}, arguments);};';
@@ -67,7 +74,7 @@ var traps = {
 	get: function(target, property, receiver) {
 		if (deleted[property]) return undefined;
 		if (target.hasOwnProperty(property)) return Reflect.get(target, property, receiver);
-		return lodashRequire(property, lookup.__require);
+		return lodashRequire(property, localRequire);
 	},
 	set: function(target, property, value, receiver) {
 		deleted[property] = false;
@@ -143,7 +150,7 @@ function tryPackage(path) {
  */
 function tryModule(path) {
 	try {
-		return require(path);
+		return localRequire(path);
 	} catch(err) {}
 	return {};
 }

@@ -1,6 +1,8 @@
 # Lodash Provider
 
-A lodash function provider that exports lodash function modules dynamically. The module is basically, sugar to help module creators in using lodash.
+A utility function provider that exports lodash functions dynamically. You can create your own hybrid utility module using a mix of your own functions and the lodash provided ones.
+
+The provider will search your own utility functions if requested method is not present try to load and present the lodash one.
 
 ## Install
 
@@ -16,9 +18,9 @@ yarn add lodash-provider
 
 ## The purpose of this module
 
-No-one can be bothered with refactoring-on-refactoring of private methods.  Neither can people do we wish to unit test private code. It is for these reasons, lodash use, is good practice.  
+Most sensible people can do not bother with refactoring-on-refactoring of private methods.  Normally, we do not wish to unit test private code. It is for these reasons that using lodash is good practice.  
 
-The newest version of lodash, allows function can be imported as its own dependency. This avoids bloating your own modules with unnecessary dependencies.
+The newest version of lodash, allows methods to be imported individually. This avoids bloating your own modules with the entire lodash export.
 
 The pain of all this is having to require-in each module individually and mix that in with your own utility functions not provided by lodash.  This module aims to make this process slightly easier by providing some sugar.
 
@@ -71,13 +73,6 @@ Here we have added our utility function that is similar to lodash's castArray. A
 const util = require('./util);
 ```
 
-You can also mix
+## Older node versions
 
-## Notes about require()
-
-If the module location is symlinked (eg. via **npm link** or **yarn link**) lodash-provider may have trouble locating modules.  To avoid this you can pass in the *require()* function to use.
-
-```javascript
-const util = require('lodash-provider');
-util.__require = require.
-```
+If JavaScript Proxy and Reflect are available this module will simply require in the lodash functions as they are requested.  In older node versions this cannot be achieved with proxies. In this setting the module will parse the package.json hierarchy and load in the lodash dependencies.
