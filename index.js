@@ -2,8 +2,12 @@
 
 var readFileSync = require('fs').readFileSync;
 var path = require('path');
+var memoize = require('lodash.memoize');
+var uniq = require('lodash.uniq');
+
 var lodashTest = /^lodash\.[a-z0-9]/;
 var lookup = {};
+var deleted = {};
 
 /**
  * Get a lodash module id for the given function.
@@ -50,14 +54,40 @@ function lodashFunctionToString(functionName, require) {
 	}
 }
 
-function get(target, property, receiver) {
-	if (target.hasOwnProperty(property)) return Reflect.get(target, property, receiver);
-	return lodashRequire(property, lookup.__require);
-}
-
-function set(target, property, value, receiver) {
-	return Reflect.set(target, property, value, receiver);
-}
+/**
+ * Traps for export Proxy.
+ *
+ * @property {Function} get
+ * @property {Function} set
+ * @property {Function} has
+ * @property {Function} deleteProperty
+ * @property {Function} ownKeys
+ */
+var traps = {
+	get: function(target, property, receiver) {
+		if (deleted[property]) return undefined;
+		if (target.hasOwnProperty(property)) return Reflect.get(target, property, receiver);
+		return lodashRequire(property, lookup.__require);
+	},
+	set: function(target, property, value, receiver) {
+		deleted[property] = false;
+		return Reflect.set(target, property, value, receiver);
+	},
+	has: function(target, property) {
+		if (deleted[property]) return false;
+		if (property in target) return Reflect.has(target, property);
+		const lodash = setLodashFunctions();
+		return (property in lodash);
+	},
+	ownKeys: function has(target, property) {
+		return uniq(Reflect.ownKeys(target).concat(Reflect.ownKeys(setLodashFunctions()))).filter(function(key) {
+			return !deleted[key];
+		});
+	},
+	deleteProperty: function(target, property) {
+		deleted[property] = true;
+	}
+};
 
 /**
  * Test whether current environment supports Proxy objects has the Reflect api.
@@ -84,43 +114,16 @@ function lop(path) {
 }
 
 /**
- * Take an array, returning unique entries.
- *
- * @note not the most efficient method but designed to be backwards compatible with older JavaScript versions.
- *
- * @param {Array} ary		Array to filter.
- * @returns {Array}			Array of unique entries.
- */
-function unique(ary) {
-	var _ary = [];
-	var lookup = {};
-	ary.forEach(function(item) {
-		if (!lookup.hasOwnProperty(item)) {
-			_ary.push(item);
-			lookup[item] = true;
-		}
-	});
-	return _ary;
-}
-
-/**
- * Traverse up the current module->parent tree returning all possible local directories for node_modules loading.
+ * Find all possible local directories for node_modules loading.
  *
  * @returns {Array.<string>}		Load paths.
  */
 function getPathStack() {
-	var _module = module;
-	var stack = [];
-	while (_module.parent) {
-		var dir = path.dirname(_module.filename);
-		while(dir) {
-			stack.push(dir);
-			dir = lop(dir);
-		}
-		_module = _module.parent;
-	}
-
-	return unique(stack).sort();
+	return (module.parent || module).paths.map(function(path) {
+		return lop(path)
+	}).filter(function(path) {
+		return (path !== '');
+	});
 }
 
 /**
@@ -170,9 +173,11 @@ function loadPackageModules(packages, packageData, modType) {
 }
 
 /**
- * Load all lodash modules that can be found in the current paths into lookup.
+ * Load all lodash modules that can be found in the current paths into lookup. Results are memoized.
+ *
+ * @memoize
  */
-function getLodashFunctions() {
+var getLodashFunctions = memoize(function() {
 	var packages = [];
 
 	getPackageDataStack().forEach(function(packageData) {
@@ -180,15 +185,27 @@ function getLodashFunctions() {
 		loadPackageModules(packages, packageData, 'devDependencies');
 	});
 
-	packages.forEach(function(exported) {
+	return packages;
+});
+
+/**
+ * Find and set lodash functions on a given object. Results are memoized.
+ *
+ * @memoize
+ * @param {Object} [lookup={}]		Object to set on.
+ */
+var setLodashFunctions = memoize(function setLodashFunctions(lookup) {
+	lookup = lookup || {};
+	getLodashFunctions().forEach(function(exported) {
 		if (exported.name) lookup[exported.name] = exported;
 	});
-}
+
+	return lookup;
+});
 
 
 if (hasProxyReflect()) {
-	module.exports = new Proxy(lookup, {get:get, set:set});
+	module.exports = new Proxy(lookup, traps);
 } else {
-	getLodashFunctions();
-	module.exports = lookup;
+	module.exports = setLodashFunctions(lookup);
 }
