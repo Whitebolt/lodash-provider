@@ -4,6 +4,7 @@ var lodashTest = /^lodash\.[a-z0-9]/;
 var lookup = {};
 var deleted = {};
 
+var util = require('util');
 var readFileSync = require('fs').readFileSync;
 var path = require('path');
 var memoize = require('lodash.memoize');
@@ -15,6 +16,13 @@ var localRequire = (function(){
 	var _require = memoize(function (moduleId) {return require(resolver(moduleId))});
 	_require.resolve = resolver;
 	return _require;
+})();
+var _Symbol = (function(){
+	try {
+		return Symbol;
+	} catch(err) {
+		return {};
+	}
 })();
 
 
@@ -57,9 +65,19 @@ function lodashFunctionToString(functionName) {
 	var moduleText = readFileSync(localRequire.resolve(getLodashId(functionName)), 'utf-8');
 
 	return function () {
-		return 'function '+functionName+'() {const module = {exports:{}};'+moduleText+'\nreturn module.exports.apply({}, arguments);};';
+		return 'function '+functionName+'() {var module = {exports:{}};'+moduleText+'\nreturn module.exports.apply({}, arguments);};';
 	}
 }
+
+/**
+ * Get object that has everything provided in it.  Pull in lodash methods as well as local ones.
+ *
+ * @param {Object} target			The local object.
+ * @returns {Object}				An object with everything in.
+ */
+var getWholeObject = memoize(function getWholeObject(target) {
+	return Object.assign({}, setLodashFunctions(), target);
+});
 
 /**
  * Traps for export Proxy.
@@ -74,7 +92,16 @@ var traps = {
 	get: function(target, property, receiver) {
 		if (deleted[property]) return undefined;
 		if (target.hasOwnProperty(property)) return Reflect.get(target, property, receiver);
-		return lodashRequire(property, localRequire);
+		if ((typeof property).toLowerCase() !== 'symbol') return lodashRequire(property, localRequire);
+		if (property === util.inspect.custom) return function() {
+			return util.inspect(getWholeObject(target));
+		};
+		if (property === _Symbol.iterator) return function*() {
+			var lodash = getWholeObject(target);
+			for (var property in lodash) {
+				if (lodash.hasOwnProperty(property)) yield [lodash[property], property, target];
+			}
+		};
 	},
 	set: function(target, property, value, receiver) {
 		deleted[property] = false;
@@ -83,10 +110,13 @@ var traps = {
 	has: function(target, property) {
 		if (deleted[property]) return false;
 		if (property in target) return Reflect.has(target, property);
-		const lodash = setLodashFunctions();
+		var lodash = setLodashFunctions();
 		return (property in lodash);
 	},
-	ownKeys: function has(target, property) {
+	ownKeys: function(target) {
+		console.log('Own Keys', uniq(Reflect.ownKeys(target).concat(Reflect.ownKeys(setLodashFunctions()))).filter(function(key) {
+			return !deleted[key];
+		}));
 		return uniq(Reflect.ownKeys(target).concat(Reflect.ownKeys(setLodashFunctions()))).filter(function(key) {
 			return !deleted[key];
 		});
