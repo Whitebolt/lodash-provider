@@ -114,9 +114,6 @@ var traps = {
 		return (property in lodash);
 	},
 	ownKeys: function(target) {
-		console.log('Own Keys', uniq(Reflect.ownKeys(target).concat(Reflect.ownKeys(setLodashFunctions()))).filter(function(key) {
-			return !deleted[key];
-		}));
 		return uniq(Reflect.ownKeys(target).concat(Reflect.ownKeys(setLodashFunctions()))).filter(function(key) {
 			return !deleted[key];
 		});
